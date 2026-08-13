@@ -1,0 +1,7 @@
+config.php
+db.php
+backups/
+php-error.log
+uploads/
+.env
+.DS_Store

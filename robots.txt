@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin.php
+Disallow: /admin2.php
+Disallow: /db.php
+Disallow: /config.php
+Disallow: /php-error.log
+
+Sitemap: https://travel24.me/sitemap.php

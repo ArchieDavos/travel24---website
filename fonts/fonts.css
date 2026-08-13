@@ -1,0 +1,26 @@
+/* montserrat-regular - latin */
+@font-face {
+  font-display: swap;
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  src: url('montserrat-v31-latin-regular.woff2') format('woff2');
+}
+
+/* montserrat-700 - latin */
+@font-face {
+  font-display: swap;
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 700;
+  src: url('montserrat-v31-latin-700.woff2') format('woff2');
+}
+
+/* playfair-display-700 - latin */
+@font-face {
+  font-display: swap;
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 700;
+  src: url('playfair-display-v40-latin-700.woff2') format('woff2');
+}
