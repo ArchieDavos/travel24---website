@@ -333,7 +333,7 @@ $metaUrl         = 'https://www.travel24.me/post.php?id=' . (int)$post['id'] . '
         <aside id="main-sidebar" class="lg:w-1/3 w-full relative z-10 transition-opacity duration-300">
             <div class="sticky top-24 flex flex-col gap-6 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar pb-6">
                 
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-zinc-200">
+                <div class="hidden lg:block bg-white p-6 rounded-xl shadow-sm border border-zinc-200">
                     <h3 class="text-xl font-bold playfair text-zinc-800 mb-2"><?php echo $ui[$current_lang]['sidebar_title']; ?></h3>
                     <p class="text-sm text-zinc-500 mb-5"><?php echo $ui[$current_lang]['sidebar_desc']; ?></p>
 
