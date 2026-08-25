@@ -258,6 +258,41 @@ $metaUrl         = 'https://www.travel24.me/post.php?id=' . (int)$post['id'] . '
                 </div>
             <?php endif; ?>
 
+            <?php if (!empty($sub_posts)): ?>
+            <div id="etapy-wyprawy-mobile" class="lg:hidden mt-16 bg-white p-6 rounded-xl shadow-sm border border-zinc-200 scroll-mt-24">
+                <h2 class="text-2xl font-bold playfair border-l-4 border-amber-500 pl-4 mb-4"><?php echo $ui[$current_lang]['stages']; ?></h2>
+
+                <div class="flex flex-col gap-4">
+                    <?php foreach($sub_posts as $sub):
+                        $sub_cover = !empty($sub['cover_image']) ? $sub['cover_image'] : get_travel_fallback_photo($sub['id'], $travel_fallback_photos);
+                        $is_active = ($sub['id'] == $post_id);
+                        $active_classes = $is_active ? 'ring-4 ring-amber-500 ring-offset-2' : '';
+                        $is_new_stage = !$is_active && !empty($sub['created_at']) && strtotime($sub['created_at']) >= $new_stage_cutoff;
+                    ?>
+                    <a href="post.php?id=<?php echo $sub['id']; ?>&lang=<?php echo $current_lang; ?>" class="stage-link group block relative h-32 md:h-40 rounded-xl overflow-hidden shadow-md transition-transform hover:-translate-y-1 <?php echo $active_classes; ?>" data-stage-id="<?php echo $sub['id']; ?>">
+
+                        <?php if ($is_new_stage): ?>
+                        <div class="new-stage-badge absolute top-3 right-3 bg-red-600 text-white text-[10px] md:text-xs font-bold px-3 py-1 rounded-full uppercase btn-floating-pulse shadow-lg z-20">
+                            <?php echo $ui[$current_lang]['new_stage']; ?>
+                        </div>
+                        <?php endif; ?>
+
+                        <img src="<?php echo htmlspecialchars($sub_cover); ?>" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+
+                        <div class="absolute bottom-0 left-0 p-4 w-full">
+                            <h3 class="text-white font-bold text-lg md:text-xl leading-tight shadow-sm playfair"><?php echo htmlspecialchars(get_translated($sub, 'title', $current_lang)); ?></h3>
+                            <div class="flex justify-between items-center mt-2">
+                                <p class="text-amber-400 text-xs font-bold uppercase tracking-wider shadow-sm">📍 <?php echo htmlspecialchars(get_translated($sub, 'location', $current_lang)); ?></p>
+                                <span class="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm shadow-sm">👁️ <?php echo (int)$sub['views']; ?></span>
+                            </div>
+                        </div>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="mt-16 bg-white border border-zinc-200 rounded-xl p-8 text-center shadow-sm relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-[#25D366]"></div>
                 <h3 class="text-2xl font-bold playfair text-zinc-800 mb-2"><?php echo $ui[$current_lang]['notif_title']; ?></h3>
@@ -296,7 +331,7 @@ $metaUrl         = 'https://www.travel24.me/post.php?id=' . (int)$post['id'] . '
             <div class="sticky top-24 flex flex-col gap-6 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar pb-6">
                 
                 <?php if (!empty($sub_posts)): ?>
-                <div id="etapy-wyprawy" class="bg-white p-6 rounded-xl shadow-sm border border-zinc-200 scroll-mt-24">
+                <div id="etapy-wyprawy" class="hidden lg:block bg-white p-6 rounded-xl shadow-sm border border-zinc-200 scroll-mt-24">
                     <h2 class="text-2xl font-bold playfair border-l-4 border-amber-500 pl-4 mb-4"><?php echo $ui[$current_lang]['stages']; ?></h2>
                     
                     <div class="flex flex-col gap-4" id="stages-container">
@@ -382,7 +417,7 @@ $metaUrl         = 'https://www.travel24.me/post.php?id=' . (int)$post['id'] . '
     <?php endif; ?>
     
     <?php if (!empty($sub_posts)): ?>
-        <a href="#etapy-wyprawy" id="scroll-stages-btn" class="fixed bottom-24 left-1/2 z-[90] bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-full font-bold flex items-center justify-center gap-2 lg:hidden btn-floating-pulse border-2 border-white text-sm whitespace-nowrap transition-colors">
+        <a href="#etapy-wyprawy-mobile" id="scroll-stages-btn" class="fixed bottom-24 left-1/2 z-[90] bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-full font-bold flex items-center justify-center gap-2 lg:hidden btn-floating-pulse border-2 border-white text-sm whitespace-nowrap transition-colors">
             <?php echo $ui[$current_lang]['scroll_stages']; ?>
         </a>
     <?php endif; ?>
@@ -404,16 +439,13 @@ $metaUrl         = 'https://www.travel24.me/post.php?id=' . (int)$post['id'] . '
             localStorage.setItem('travel24_read_stages', JSON.stringify(readStages));
         }
 
-        const stagesContainer = document.getElementById('stages-container');
-        if (stagesContainer) {
-            stagesContainer.querySelectorAll('.stage-link').forEach(stage => {
-                const stageId = parseInt(stage.getAttribute('data-stage-id'));
-                if (readStages.includes(stageId)) {
-                    const badge = stage.querySelector('.new-stage-badge');
-                    if (badge) badge.classList.add('hidden');
-                }
-            });
-        }
+        document.querySelectorAll('.stage-link').forEach(stage => {
+            const stageId = parseInt(stage.getAttribute('data-stage-id'));
+            if (readStages.includes(stageId)) {
+                const badge = stage.querySelector('.new-stage-badge');
+                if (badge) badge.classList.add('hidden');
+            }
+        });
     });
 
     window.addEventListener('scroll', () => {
@@ -457,8 +489,8 @@ $metaUrl         = 'https://www.travel24.me/post.php?id=' . (int)$post['id'] . '
                 e.preventDefault();
                 zenBtn.click(); 
                 setTimeout(() => {
-                    document.getElementById('etapy-wyprawy').scrollIntoView({behavior: 'smooth'});
-                }, 300); 
+                    document.getElementById('etapy-wyprawy-mobile').scrollIntoView({behavior: 'smooth'});
+                }, 300);
             }
         });
     }
