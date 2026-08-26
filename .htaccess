@@ -1,7 +1,18 @@
-# Blokada dostępu do katalogu .git przez przeglądarkę - bez tego
-# każdy mógłby wejść na travel24.me/.git/config i zobaczyć wewnętrzne
-# dane repozytorium. Musi być wgrane PRZED init_repo.php.
+# Włączenie przepisywania adresów
+RewriteEngine On
+
+# Blokada bezpośredniego podglądu spisów plików w katalogach
+Options -Indexes
+
+# Ochrona wrażliwych plików systemowych (np. db.php, konfiguracyjnych)
+<FilesMatch "^\.ht|db\.php">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Blokada dostępu do katalogu .git przez przeglądarkę (repo git wdrożone na serwerze)
 RedirectMatch 404 /\.git($|/)
 
-# Dodatkowo: bez listowania katalogów bez pliku index (np. uploads/, backups/)
-Options -Indexes
+# Opcjonalne przekierowanie na HTTPS (jeśli masz aktywalny SSL)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
