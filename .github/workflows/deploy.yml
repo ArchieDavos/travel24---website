@@ -1,0 +1,12 @@
+name: Deploy to travel24.me
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wywolaj deploy.php (git pull na serwerze)
+        run: curl -fsS "https://travel24.me/deploy.php?token=${{ secrets.DEPLOY_TOKEN }}"
