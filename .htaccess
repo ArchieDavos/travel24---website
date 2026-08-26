@@ -1,0 +1,7 @@
+# Blokada dostępu do katalogu .git przez przeglądarkę - bez tego
+# każdy mógłby wejść na travel24.me/.git/config i zobaczyć wewnętrzne
+# dane repozytorium. Musi być wgrane PRZED init_repo.php.
+RedirectMatch 404 /\.git($|/)
+
+# Dodatkowo: bez listowania katalogów bez pliku index (np. uploads/, backups/)
+Options -Indexes
