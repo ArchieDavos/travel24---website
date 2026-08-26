@@ -1,6 +1,7 @@
 config.php
 db.php
 deploy.php
+init_repo.php
 backups/
 php-error.log
 uploads/
