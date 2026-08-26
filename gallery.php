@@ -109,7 +109,7 @@ $ui = [
                 $has_photos = false;
                 foreach ($all_stages as $stage): 
                     if (!empty($stage['linked_album_id'])):
-                        $stmt_photos = $pdo->prepare("SELECT * FROM album_photos WHERE album_id = ? ORDER BY id ASC");
+                        $stmt_photos = $pdo->prepare("SELECT * FROM album_photos WHERE album_id = ? AND is_published = 1 ORDER BY id ASC");
                         $stmt_photos->execute([$stage['linked_album_id']]);
                         $photos = $stmt_photos->fetchAll(PDO::FETCH_ASSOC);
 
@@ -153,7 +153,7 @@ $ui = [
                 $album = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($album) {
-                    $stmt_photos = $pdo->prepare("SELECT * FROM album_photos WHERE album_id = ? ORDER BY id ASC");
+                    $stmt_photos = $pdo->prepare("SELECT * FROM album_photos WHERE album_id = ? AND is_published = 1 ORDER BY id ASC");
                     $stmt_photos->execute([$album_id]);
                     $photos = $stmt_photos->fetchAll(PDO::FETCH_ASSOC);
                 }
