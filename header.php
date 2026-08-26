@@ -59,19 +59,39 @@ $ui_menu = [
         'privacy' => 'Datenschutzerklärung'
     ]
 ];
+
+// Przycisk "Galeria" jest zawsze widoczny przy logo (nie chowamy go w menu) i jest
+// kontekstowy: czytając wpis/etap prowadzi do galerii zdjęć powiązanej z TĄ wyprawą
+// (album przypięty do wpisu, a jak go brak - do zbiorczej galerii całej wyprawy z etapami),
+// wszędzie indziej (strona główna, itd.) prowadzi do listy wszystkich wypraw.
+$gallery_href = 'gallery.php?lang=' . $current_lang;
+if (isset($post) && is_array($post)) {
+    if (!empty($post['linked_album_id'])) {
+        $gallery_href = 'gallery.php?album_id=' . (int)$post['linked_album_id'] . '&lang=' . $current_lang;
+    } else {
+        $gallery_trip_id = ((int)$post['parent_id'] > 0) ? (int)$post['parent_id'] : (int)$post['id'];
+        $gallery_href = 'gallery.php?trip_id=' . $gallery_trip_id . '&lang=' . $current_lang;
+    }
+}
 ?>
 <nav class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-        <!-- Logo odsyła na główną stronę trzymając bieżący język -->
-        <a href="index.php?lang=<?php echo $current_lang; ?>" class="font-bold text-lg tracking-widest text-zinc-900 hover:text-amber-600 transition-colors">TRAVEL24.me</a>
-        
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <!-- Logo odsyła na główną stronę trzymając bieżący język -->
+            <a href="index.php?lang=<?php echo $current_lang; ?>" class="font-bold text-lg tracking-widest text-zinc-900 hover:text-amber-600 transition-colors shrink-0">TRAVEL24.me</a>
+
+            <!-- Guzik Galerii - zawsze widoczny (nie chowamy go w menu mobilnym) -->
+            <a href="<?php echo htmlspecialchars($gallery_href, ENT_QUOTES, 'UTF-8'); ?>" class="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs md:text-sm font-bold uppercase tracking-wide rounded-md shadow-sm transition-colors shrink-0">
+                📸 <?php echo $ui_menu[$current_lang]['gallery']; ?>
+            </a>
+        </div>
+
         <button id="menu-btn" class="md:hidden text-zinc-900 focus:outline-none"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg></button>
-        
+
         <div id="menu" class="hidden md:flex flex-col md:flex-row absolute md:relative top-16 md:top-0 left-0 w-full md:w-auto bg-white/95 md:bg-transparent p-6 md:p-0 space-y-4 md:space-y-0 md:space-x-6 text-sm font-bold uppercase tracking-wider">
             <!-- Linki z zaktualizowanym słownikiem i przekazywaniem flagi językowej -->
             <a href="index.php?lang=<?php echo $current_lang; ?>" class="text-zinc-600 hover:text-amber-600 transition-colors"><?php echo $ui_menu[$current_lang]['trips']; ?></a>
-            <a href="gallery.php?lang=<?php echo $current_lang; ?>" class="text-zinc-600 hover:text-amber-600 transition-colors"><?php echo $ui_menu[$current_lang]['gallery']; ?></a>
-            
+
             <?php foreach($menu_pages as $page): ?>
                 <?php 
                 $slug_lower = strtolower($page['slug']);
