@@ -5,6 +5,7 @@ init_repo.php
 finish_init.php
 inspect.php
 inspect2.php
+cleanup.php
 backups/
 php-error.log
 uploads/
