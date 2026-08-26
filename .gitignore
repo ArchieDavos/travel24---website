@@ -3,6 +3,7 @@ db.php
 deploy.php
 init_repo.php
 finish_init.php
+inspect.php
 backups/
 php-error.log
 uploads/
