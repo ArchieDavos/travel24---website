@@ -40,7 +40,7 @@ try {
 if (!$album) { header("Location: gallery.php?lang=" . $current_lang); exit; }
 
 try {
-    $stmt_photos = $pdo->prepare("SELECT * FROM album_photos WHERE album_id = ? ORDER BY id DESC");
+    $stmt_photos = $pdo->prepare("SELECT * FROM album_photos WHERE album_id = ? AND is_published = 1 ORDER BY id DESC");
     $stmt_photos->execute([$id]);
     $photos = $stmt_photos->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {

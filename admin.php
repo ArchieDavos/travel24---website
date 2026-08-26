@@ -180,6 +180,7 @@ if (isset($backup_error_msg)) { $msg = $backup_error_msg; }
 try { $pdo->exec("ALTER TABLE posts ADD COLUMN real_views INT DEFAULT 0"); } catch (PDOException $e) {}
 try { $pdo->exec("ALTER TABLE posts ADD COLUMN is_published TINYINT(1) DEFAULT 1"); } catch (PDOException $e) {}
 try { $pdo->exec("ALTER TABLE albums ADD COLUMN is_published TINYINT(1) DEFAULT 1"); } catch (PDOException $e) {}
+try { $pdo->exec("ALTER TABLE album_photos ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 1"); } catch (PDOException $e) {}
 try { $pdo->exec("ALTER TABLE posts ADD COLUMN location_en VARCHAR(255) DEFAULT ''"); } catch (PDOException $e) {}
 try { $pdo->exec("ALTER TABLE posts ADD COLUMN location_it VARCHAR(255) DEFAULT ''"); } catch (PDOException $e) {}
 try { $pdo->exec("ALTER TABLE posts ADD COLUMN location_es VARCHAR(255) DEFAULT ''"); } catch (PDOException $e) {}
@@ -335,7 +336,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['action']) && !isset($
             }
             $should_redirect = true;
         }
-        
+
+        if (isset($_POST['move_post_photos']) && !empty($_POST['photo_ids']) && !empty($_POST['target_post_id'])) {
+            $target_post_id = (int)$_POST['target_post_id'];
+            $target_check = $pdo->prepare("SELECT id FROM posts WHERE id = ?");
+            $target_check->execute([$target_post_id]);
+            if ($target_check->fetch()) {
+                $photo_ids = array_filter(array_map('intval', (array)$_POST['photo_ids']));
+                if (!empty($photo_ids)) {
+                    $placeholders = implode(',', array_fill(0, count($photo_ids), '?'));
+                    $pdo->prepare("UPDATE post_photos SET post_id = ? WHERE id IN ($placeholders)")->execute(array_merge([$target_post_id], $photo_ids));
+                    $_SESSION['admin_msg'] = "<p style='color:green; font-weight:bold;'>Przeniesiono " . count($photo_ids) . " zdjęć!</p>";
+                }
+            }
+            $should_redirect = true;
+        }
+
         if (isset($_POST['add_page'])) {
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $_POST['new_page_slug'] ?: $_POST['page_title_pl']), '-'));
             if ($slug === '') $slug = 'strona-' . substr(uniqid(), -6);
@@ -394,10 +410,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['action']) && !isset($
                 $tmp = $_FILES['photos']['tmp_name'][$key];
                 if ($_FILES['photos']['error'][$key] == 0) {
                     $target = $upload_dir . time() . '_' . rand(100, 999) . '.jpg';
-                    if (resize_and_save_image($tmp, $target, 1600, 80)) { $pdo->prepare("INSERT INTO album_photos (album_id, photo_url) VALUES (?, ?)")->execute([$album_id_for_upload, $target]); }
+                    if (resize_and_save_image($tmp, $target, 1600, 80)) { $pdo->prepare("INSERT INTO album_photos (album_id, photo_url, is_published) VALUES (?, ?, 0)")->execute([$album_id_for_upload, $target]); }
                 }
             }
-            $_SESSION['admin_msg'] = "<p style='color:green; font-weight:bold;'>Zdjęcia wgrane do albumu!</p>";
+            $_SESSION['admin_msg'] = "<p style='color:green; font-weight:bold;'>Zdjęcia wgrane do albumu! Pamiętaj, aby je opublikować w sekcji 7 — na razie są niewidoczne na froncie.</p>";
+            $should_redirect = true;
+        }
+
+        if (isset($_POST['save_photo_published']) && !empty($_POST['all_photo_ids'])) {
+            $stmt = $pdo->prepare("UPDATE album_photos SET is_published = ? WHERE id = ?");
+            foreach ($_POST['all_photo_ids'] as $pid) {
+                $pid = (int)$pid;
+                $is_pub = isset($_POST['photo_published'][$pid]) ? 1 : 0;
+                $stmt->execute([$is_pub, $pid]);
+            }
+            $_SESSION['admin_msg'] = "<p style='color:green; font-weight:bold;'>Statusy publikacji zdjęć zaktualizowane!</p>";
             $should_redirect = true;
         }
 
@@ -446,7 +473,7 @@ $pages = safe_query($pdo, "SELECT * FROM pages", $db_error);
 $posts = safe_query($pdo, "SELECT * FROM posts ORDER BY id DESC", $db_error);
 $main_posts = safe_query($pdo, "SELECT id, title FROM posts WHERE parent_id = 0 ORDER BY id DESC", $db_error);
 $post_photos = safe_query($pdo, "SELECT * FROM post_photos ORDER BY id ASC", $db_error);
-$photos = safe_query($pdo, "SELECT p.id, p.album_id, p.photo_url, a.title FROM album_photos p JOIN albums a ON p.album_id = a.id ORDER BY p.id DESC", $db_error);
+$photos = safe_query($pdo, "SELECT p.id, p.album_id, p.photo_url, p.is_published, a.title FROM album_photos p JOIN albums a ON p.album_id = a.id ORDER BY p.id DESC", $db_error);
 $pending_comments = safe_query($pdo, "SELECT c.*, p.title as post_title FROM comments c JOIN posts p ON c.post_id = p.id WHERE c.is_approved = 0 ORDER BY c.created_at DESC", $db_error);
 
 $langs = ['pl' => '🇵🇱 PL', 'en' => '🇬🇧 EN', 'it' => '🇮🇹 IT', 'es' => '🇪🇸 ES', 'de' => '🇩🇪 DE'];
@@ -624,7 +651,17 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
             <hr>
             <div id="postPhotosSection" style="display:none; margin-top:20px;">
                 <h3 style="margin-top:0;">Zdjęcia tego wpisu</h3>
+                <p style="font-size:12px; color:#666; margin-top:-8px;">💡 Wgraj wszystkie zdjęcia z wyprawy tutaj (np. do wpisu głównego), a potem zaznacz te, które należą do konkretnego etapu, i przenieś je poniższym przyciskiem.</p>
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <button type="button" class="btn-blue" style="font-size:12px; padding:6px 10px;" onclick="toggleAllPostPhotos(true)">Zaznacz wszystkie</button>
+                    <button type="button" class="btn-blue" style="font-size:12px; padding:6px 10px;" onclick="toggleAllPostPhotos(false)">Odznacz wszystkie</button>
+                </div>
                 <div id="postPhotosGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:10px; margin-bottom:15px;"></div>
+                <div style="background:#eef2f5; padding:10px; border-radius:4px; margin-bottom:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <label style="font-weight:bold; font-size:13px;">Przenieś zaznaczone zdjęcia do:</label>
+                    <select id="movePhotosTargetPost" class="highlight-select" style="flex:1; min-width:200px;"></select>
+                    <button type="button" class="btn-green" style="font-size:12px; padding:6px 10px;" onclick="movePostPhotos()">Przenieś zaznaczone</button>
+                </div>
                 <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                     <input type="hidden" name="post_id_for_photos" id="postIdForPhotos" value="">
@@ -634,6 +671,12 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
             </div>
         </div>
     </div>
+
+    <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" id="movePostPhotosForm" style="display:none;">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+        <input type="hidden" name="target_post_id" id="movePhotosTargetPostId" value="">
+        <input type="hidden" name="move_post_photos" value="1">
+    </form>
 
     <div class="box" id="containerPages">
         <h2>3. Zarządzaj Zakładkami</h2>
@@ -731,7 +774,8 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
             <option value="none" selected>-- Wybierz album, aby załadować zdjęcia --</option>
             <option value="all">👁️ Pokaż wszystkie zdjęcia ze wszystkich albumów</option>
             <?php foreach($albums as $a): ?><option value="<?php echo $a['id']; ?>">📂 Filtruj tylko: <?php echo htmlspecialchars($a['title']); ?></option><?php endforeach; ?></select>
-        <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" onsubmit="return confirm('Czy na pewno chcesz trwale usunąć zaznaczone zdjęcia?');">
+        <p style="font-size: 12px; color: #666; margin: -10px 0 15px;">💡 Nowo wgrane zdjęcia są domyślnie <strong>niewidoczne na froncie</strong> ("Do opublikowania"). Zaznacz "Opublikowany" i zapisz, żeby pokazały się w galerii — w każdej chwili możesz to cofnąć.</p>
+        <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" onsubmit="return (event.submitter && event.submitter.name === 'delete_photos') ? confirm('Czy na pewno chcesz trwale usunąć zaznaczone zdjęcia?') : true;">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
             <div id="managePhotosGrid" style="display: none; margin-bottom: 15px;">
                 <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; background: #eef2f5; padding: 10px 15px; border-radius: 6px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
@@ -745,11 +789,19 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
                     <div class="photo-manage-wrapper" data-album-id="<?php echo $ph['album_id']; ?>">
                         <img src="<?php echo htmlspecialchars($ph['photo_url']); ?>">
                         <p title="<?php echo htmlspecialchars($ph['title']); ?>"><?php echo htmlspecialchars($ph['title']); ?></p>
-                        <label><input type="checkbox" name="photo_ids[]" class="photo-checkbox" value="<?php echo (int)$ph['id']; ?>"> Zaznacz</label>
+                        <input type="hidden" name="all_photo_ids[]" value="<?php echo (int)$ph['id']; ?>">
+                        <label class="photo-publish-toggle" style="cursor:pointer; display:flex; align-items:center; gap:4px; font-size:11px; font-weight:bold; margin-top:4px; padding:4px 6px; border-radius:4px; background:<?php echo $ph['is_published'] ? '#d1fae5' : '#fee2e2'; ?>; color:<?php echo $ph['is_published'] ? '#065f46' : '#991b1b'; ?>; border:1px solid <?php echo $ph['is_published'] ? '#a7f3d0' : '#fecaca'; ?>;">
+                            <input type="checkbox" name="photo_published[<?php echo (int)$ph['id']; ?>]" class="photo-publish-checkbox" value="1" <?php echo $ph['is_published'] ? 'checked' : ''; ?>>
+                            <span class="publish-label-text"><?php echo $ph['is_published'] ? 'Opublikowany' : 'Do opublikowania'; ?></span>
+                        </label>
+                        <label><input type="checkbox" name="photo_ids[]" class="photo-checkbox" value="<?php echo (int)$ph['id']; ?>"> Zaznacz do usunięcia</label>
                     </div>
                 <?php endforeach; ?>
             </div>
-            <button type="submit" name="delete_photos" id="deletePhotosBtn" class="btn-red" style="display: none;">🗑️ Usuń zaznaczone zdjęcia</button>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button type="submit" name="save_photo_published" class="btn-green" style="display: none;" id="savePublishedBtn">💾 Zapisz statusy publikacji</button>
+                <button type="submit" name="delete_photos" id="deletePhotosBtn" class="btn-red" style="display: none;">🗑️ Usuń zaznaczone zdjęcia</button>
+            </div>
         </form>
     </div>
     
@@ -928,14 +980,42 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
         });
         
         const postPhotosData = <?php echo json_encode($post_photos, JSON_HEX_TAG | JSON_HEX_APOS); ?>;
+        function toggleAllPostPhotos(checked) {
+            document.querySelectorAll('#postPhotosGrid .post-photo-check').forEach(cb => cb.checked = checked);
+        }
+        function movePostPhotos() {
+            const ids = Array.from(document.querySelectorAll('#postPhotosGrid .post-photo-check:checked')).map(cb => cb.value);
+            const targetId = document.getElementById('movePhotosTargetPost').value;
+            if (ids.length === 0) { alert('Zaznacz przynajmniej jedno zdjęcie.'); return; }
+            if (!targetId) { alert('Wybierz wpis docelowy.'); return; }
+            const form = document.getElementById('movePostPhotosForm');
+            form.querySelectorAll('input[name="photo_ids[]"]').forEach(el => el.remove());
+            ids.forEach(id => {
+                const input = document.createElement('input'); input.type = 'hidden'; input.name = 'photo_ids[]'; input.value = id;
+                form.appendChild(input);
+            });
+            document.getElementById('movePhotosTargetPostId').value = targetId;
+            form.submit();
+        }
+        function populateMoveTargetSelect(currentPostId) {
+            const sel = document.getElementById('movePhotosTargetPost'); if (!sel) return;
+            sel.innerHTML = '';
+            postsData.filter(p => String(p.id) !== String(currentPostId)).forEach(p => {
+                const opt = document.createElement('option'); opt.value = p.id;
+                opt.textContent = (String(p.parent_id) === '0' ? '⭐ ' : '↳ ') + p.title;
+                sel.appendChild(opt);
+            });
+        }
         function renderPostPhotos(postId) {
             const grid = document.getElementById('postPhotosGrid'); const section = document.getElementById('postPhotosSection');
             if(!grid || !section) return; document.getElementById('postIdForPhotos').value = postId || '';
             section.style.display = postId ? 'block' : 'none'; grid.innerHTML = ''; if (!postId) return;
+            populateMoveTargetSelect(postId);
             postPhotosData.filter(ph => String(ph.post_id) === String(postId)).forEach(ph => {
                 const wrap = document.createElement('div'); wrap.style.textAlign = 'center';
+                const check = document.createElement('input'); check.type = 'checkbox'; check.className = 'post-photo-check'; check.value = ph.id; check.style.cssText = 'width:18px; height:18px; margin-bottom:4px;'; wrap.appendChild(check); wrap.appendChild(document.createElement('br'));
                 const img = document.createElement('img'); img.src = ph.image_url; img.style.width = '100%'; img.style.height = '80px'; img.style.objectFit = 'cover'; img.style.borderRadius = '4px'; wrap.appendChild(img);
-                
+
                 const insertBtn = document.createElement('button'); insertBtn.type = 'button'; insertBtn.textContent = 'Wstaw do treści'; insertBtn.style.cssText = 'font-size:11px; padding:4px 6px; margin-top:4px; width:100%; background:#27ae60; border:none; color:white; border-radius:3px; cursor:pointer;';
                 insertBtn.onclick = () => { 
                     langsCode.forEach(lang => { 
@@ -1005,9 +1085,22 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
         const filterPhotosSelector = document.getElementById('filterPhotosSelector');
         const managePhotosGrid = document.getElementById('managePhotosGrid');
         const deletePhotosBtn = document.getElementById('deletePhotosBtn');
+        const savePublishedBtn = document.getElementById('savePublishedBtn');
         const selectAllPhotosBtn = document.getElementById('selectAllPhotosBtn');
         const deselectAllPhotosBtn = document.getElementById('deselectAllPhotosBtn');
         const selectedCountText = document.getElementById('selectedCountText');
+
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('photo-publish-checkbox')) {
+                const label = e.target.closest('.photo-publish-toggle');
+                const text = label.querySelector('.publish-label-text');
+                if (e.target.checked) {
+                    text.textContent = 'Opublikowany'; label.style.background = '#d1fae5'; label.style.color = '#065f46'; label.style.borderColor = '#a7f3d0';
+                } else {
+                    text.textContent = 'Do opublikowania'; label.style.background = '#fee2e2'; label.style.color = '#991b1b'; label.style.borderColor = '#fecaca';
+                }
+            }
+        });
 
         function updateSelectedCount() {
             const checkboxes = document.querySelectorAll('.photo-checkbox');
@@ -1028,15 +1121,17 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
             if (filterId === 'none') {
                 managePhotosGrid.style.display = 'none';
                 deletePhotosBtn.style.display = 'none';
+                savePublishedBtn.style.display = 'none';
             } else {
                 managePhotosGrid.style.display = 'grid';
                 deletePhotosBtn.style.display = 'inline-block';
+                savePublishedBtn.style.display = 'inline-block';
                 photoWrappers.forEach(w => {
-                    if (filterId === 'all' || w.getAttribute('data-album-id') === filterId) { 
-                        w.style.display = 'flex'; 
-                    } else { 
-                        w.style.display = 'none'; 
-                        const cb = w.querySelector('input[type="checkbox"]');
+                    if (filterId === 'all' || w.getAttribute('data-album-id') === filterId) {
+                        w.style.display = 'flex';
+                    } else {
+                        w.style.display = 'none';
+                        const cb = w.querySelector('.photo-checkbox');
                         if(cb) cb.checked = false;
                     }
                 });
@@ -1047,7 +1142,7 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
         selectAllPhotosBtn?.addEventListener('click', function() {
             document.querySelectorAll('.photo-manage-wrapper').forEach(w => {
                 if (w.style.display !== 'none') {
-                    const cb = w.querySelector('input[type="checkbox"]');
+                    const cb = w.querySelector('.photo-checkbox');
                     if(cb) cb.checked = true;
                 }
             });
