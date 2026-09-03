@@ -34,7 +34,9 @@ if (!function_exists('count_mailerlite_active_subscribers')) {
         return $total;
     }
 }
-$total_subscribers = count_mailerlite_active_subscribers();
+// Samo wywolanie (nie definicja) przeniesione nizej, zeby nie robilo
+// sie na kazdym wejsciu na admin.php (w tym na ekranie logowania) -
+// patrz komentarz przy $total_subscribers po sprawdzeniu sesji.
 // ----------------------------------------
 
 ini_set('display_errors', 0);
@@ -93,6 +95,13 @@ if (!isset($_SESSION['loggedin'])) {
         exit;
     }
 }
+
+// Zliczanie subskrybentow MailerLite - dopiero teraz, po potwierdzeniu
+// zalogowania. Wczesniej robilo sie to na kazdym wejsciu na admin.php
+// (w tym na ekranie logowania i kazdej probie kliknieia "Zaloguj"),
+// co przy wolnym/niedzialajacym API MailerLite zawieszalo caly
+// formularz logowania na dlugie sekundy - wygladalo jak "martwy" guzik.
+$total_subscribers = count_mailerlite_active_subscribers();
 
 if (empty($_SESSION['csrf_token'])) { $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); }
 $csrf_token = $_SESSION['csrf_token'];
