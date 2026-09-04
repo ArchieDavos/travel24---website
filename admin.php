@@ -99,8 +99,8 @@ if (!isset($_SESSION['loggedin'])) {
         $login_error = '';
         if ($locked) { $login_error = '<p style="color:red;">Zbyt wiele nieudanych prób.</p>'; } 
         elseif (isset($_POST['login'])) { $login_error = '<p style="color:red;">Błędny login lub hasło.</p>'; }
-        echo '<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Logowanie - Travel24.me</title></head><body>';
-        echo '<div style="max-width:400px; width:90%; margin:100px auto; font-family:Arial; text-align:center; box-sizing:border-box;"><h2>Logowanie Travel24.me</h2>' . $login_error . '<form method="POST" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'"><input type="text" name="user" placeholder="Login" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><br><input type="password" name="pass" placeholder="Hasło" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><br><button type="submit" name="login" style="width:100%; padding:10px; background:#2c3e50; color:white; border:none; border-radius:4px; font-weight:bold;">Zaloguj</button></form></div>';
+        echo '<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>Logowanie - Travel24.me</title><style>*{box-sizing:border-box;} html,body{margin:0; padding:0; width:100%; max-width:100%; overflow-x:hidden;}</style></head><body>';
+        echo '<div style="max-width:360px; width:88%; margin:100px auto 0; font-family:Arial; text-align:center;"><h2 style="font-size:22px; word-break:break-word;">Logowanie Travel24.me</h2>' . $login_error . '<form method="POST" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'"><input type="text" name="user" placeholder="Login" style="width:100%; padding:10px; margin-bottom:10px;"><br><input type="password" name="pass" placeholder="Hasło" style="width:100%; padding:10px; margin-bottom:10px;"><br><button type="submit" name="login" style="width:100%; padding:10px; background:#2c3e50; color:white; border:none; border-radius:4px; font-weight:bold;">Zaloguj</button></form></div>';
         echo '</body></html>';
         exit;
     }
@@ -507,8 +507,10 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administratora</title>
     <style>
-        body{background:#f4f4f4; padding:20px; font-family:Arial, sans-serif; color:#333;} 
-        .box{background:white; padding:20px; margin-bottom:20px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);} 
+        *{box-sizing:border-box;}
+        html{overflow-x:hidden; max-width:100%;}
+        body{background:#f4f4f4; padding:20px; font-family:Arial, sans-serif; color:#333; overflow-x:hidden; max-width:100%;}
+        .box{background:white; padding:20px; margin-bottom:20px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); max-width:100%;}
         input, select{width:100%; padding:10px; margin:5px 0 15px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;} 
         button{padding:10px 20px; background:#2c3e50; color:white; border:none; cursor:pointer; font-weight:bold; border-radius:4px; transition:0.3s;} 
         button:hover{opacity:0.9;}
@@ -846,7 +848,7 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
                             ?>
                             <a href="https://wa.me/?text=<?php echo rawurlencode($wa_text); ?>" target="_blank" title="Udostępnij na WhatsApp" style="font-size:18px; margin-left:12px; text-decoration:none;">📱</a>
                         </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <!-- NOWY MAGiczny Przycisk Z Boku do Szybkiej Publikacji -->
                             <label style="cursor:pointer; display:flex; align-items:center; gap:4px; font-size:11px; font-weight:bold; background: <?php echo (isset($p['is_published']) && $p['is_published'] == 1) ? '#d1fae5' : '#fee2e2'; ?>; color: <?php echo (isset($p['is_published']) && $p['is_published'] == 1) ? '#065f46' : '#991b1b'; ?>; padding: 4px 8px; border: 1px solid <?php echo (isset($p['is_published']) && $p['is_published'] == 1) ? '#a7f3d0' : '#fecaca'; ?>; border-radius: 4px; transition:0.3s;">
                                 <input type="checkbox" name="post_published[<?php echo $p['id']; ?>]" value="1" <?php echo (isset($p['is_published']) && $p['is_published'] == 1) ? 'checked' : ''; ?>>
