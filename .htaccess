@@ -13,6 +13,6 @@ Options -Indexes
 # Blokada dostępu do katalogu .git przez przeglądarkę (repo git wdrożone na serwerze)
 RedirectMatch 404 /\.git($|/)
 
-# Opcjonalne przekierowanie na HTTPS (jeśli masz aktywalny SSL)
-# RewriteCond %{HTTPS} off
-# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# Wymuszenie HTTPS (SSL aktywny i uzywany na produkcji)
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
