@@ -2,6 +2,14 @@
 define('APP_ACCESS', true);
 require_once __DIR__ . '/config.php';
 
+// Panel admina nigdy nie moze byc cache'owany (m.in. przez LiteSpeed
+// Cache dzialajacy na tym hostingu) - inaczej po zalogowaniu mozna
+// dostac z powrotem stara, zapisana wczesniej strone logowania mimo
+// poprawnej sesji.
+header('Cache-Control: no-store, no-cache, must-revalidate, private');
+header('Pragma: no-cache');
+header('X-LiteSpeed-Cache-Control: no-cache');
+
 // --- ZLICZANIE SUBSKRYBENTÓW MAILERLITE ---
 // API MailerLite (connect.mailerlite.com) używa kursorowej paginacji i nie zwraca już pola
 // meta.total, więc liczbę aktywnych subskrybentów trzeba zliczyć samodzielnie po stronach.
