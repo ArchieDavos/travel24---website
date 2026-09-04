@@ -99,7 +99,9 @@ if (!isset($_SESSION['loggedin'])) {
         $login_error = '';
         if ($locked) { $login_error = '<p style="color:red;">Zbyt wiele nieudanych prób.</p>'; } 
         elseif (isset($_POST['login'])) { $login_error = '<p style="color:red;">Błędny login lub hasło.</p>'; }
-        echo '<div style="max-width:400px; margin:100px auto; font-family:Arial; text-align:center;"><h2>Logowanie Travel24.me</h2>' . $login_error . '<form method="POST" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'"><input type="text" name="user" placeholder="Login" style="width:100%; padding:10px; margin-bottom:10px;"><br><input type="password" name="pass" placeholder="Hasło" style="width:100%; padding:10px; margin-bottom:10px;"><br><button type="submit" name="login" style="width:100%; padding:10px; background:#2c3e50; color:white; border:none; border-radius:4px; font-weight:bold;">Zaloguj</button></form></div>';
+        echo '<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Logowanie - Travel24.me</title></head><body>';
+        echo '<div style="max-width:400px; width:90%; margin:100px auto; font-family:Arial; text-align:center; box-sizing:border-box;"><h2>Logowanie Travel24.me</h2>' . $login_error . '<form method="POST" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'"><input type="text" name="user" placeholder="Login" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><br><input type="password" name="pass" placeholder="Hasło" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><br><button type="submit" name="login" style="width:100%; padding:10px; background:#2c3e50; color:white; border:none; border-radius:4px; font-weight:bold;">Zaloguj</button></form></div>';
+        echo '</body></html>';
         exit;
     }
 }
@@ -475,6 +477,7 @@ $pages_safe = array_map(function($p) { foreach ($p as $k => $v) if ($v === null)
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administratora</title>
     <style>
         body{background:#f4f4f4; padding:20px; font-family:Arial, sans-serif; color:#333;} 
